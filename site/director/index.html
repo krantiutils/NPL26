@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPL Director</title>
+<link rel="stylesheet" href="director.css">
+<script type="module" src="director.js"></script>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="tally" id="tally" title="engine state"></span>NPL <b>DIRECTOR</b></div>
+  <div class="match-title" id="matchTitle">No timeline loaded</div>
+  <div class="actions">
+    <label class="btn">Open…<input type="file" id="fileInput" accept=".json,application/json" hidden></label>
+    <button class="btn" id="pasteBtn">Paste</button>
+    <button class="btn" id="sampleBtn">Load sample</button>
+    <button class="btn" id="restoreBtn" hidden>Restore last edit</button>
+    <button class="btn" id="recomputeBtn" disabled title="Rewrite score_after, over_end, innings_break, target and the result from the balls">Recompute snapshots</button>
+    <button class="btn" id="exportBtn" disabled>Export JSON</button>
+    <button class="btn primary" id="gameBtn" disabled title="Compile the timeline for the engine and open the game playing it in a new tab">Play in game</button>
+  </div>
+  <div class="transport">
+    <button class="btn tbtn" id="playBtn" disabled title="Play from the selected event (Space)">▶ Play from here</button>
+    <button class="btn tbtn" id="pauseBtn" disabled title="Pause after the current event (Space)">❚❚ Pause</button>
+    <button class="btn tbtn" id="stepBtn" disabled title="Play the selected event, then select the next ball (N)">Step ball</button>
+    <label class="speed">Speed
+      <select id="speedSel">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option>
+        <option value="4">4×</option><option value="8">8×</option><option value="16">16×</option>
+      </select>
+    </label>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="panel timeline" aria-label="Timeline">
+    <div class="panel-head">
+      <h2>Timeline</h2>
+      <div class="tabs" id="inningsTabs" role="tablist"></div>
+    </div>
+    <div class="legend">
+      <span class="chip c-dot">·</span>dot <span class="chip c-run">1</span>runs <span class="chip c-four">4</span>
+      <span class="chip c-six">6</span> <span class="chip c-wkt">W</span> <span class="chip c-extra">wd</span>extras
+      <span class="chip c-dot rv">·</span>review <span class="chip c-ev">TO</span>event
+    </div>
+    <div class="scroll" id="timeline"><p class="empty">Open a timeline (file, drag and drop, or paste), or load the sample match.</p></div>
+  </section>
+
+  <section class="panel inspector" aria-label="Inspector">
+    <div class="panel-head">
+      <h2 id="inspTitle">Inspector</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-view="form" role="tab">Form</button>
+        <button class="tab" data-view="json" role="tab">JSON</button>
+      </div>
+    </div>
+    <div class="scroll insp-body">
+      <div class="situation" id="situation"></div>
+      <div class="map-wrap" id="mapWrap" hidden>
+        <svg id="fieldMap" viewBox="-80 -84 160 158" aria-label="Field placement, drag fielders"></svg>
+        <div class="map-side">
+          <div id="mapNote" class="muted"></div>
+          <button class="btn small" id="setFieldBtn">Set field from this ball</button>
+          <button class="btn small" id="defaultFieldBtn">Default field</button>
+          <ul class="issues" id="eventIssues"></ul>
+        </div>
+      </div>
+      <form id="form" class="form" autocomplete="off" onsubmit="return false"></form>
+      <div id="jsonView" hidden>
+        <textarea id="jsonText" spellcheck="false"></textarea>
+        <div class="row"><button class="btn" id="jsonApply">Apply</button><span id="jsonMsg" class="muted"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel side" aria-label="Score and validation">
+    <div class="panel-head">
+      <h2>Scorecard</h2>
+      <div class="tabs" id="cardTabs"></div>
+    </div>
+    <div class="scroll" id="scorecard"><p class="empty">—</p></div>
+    <div class="panel-head">
+      <h2>Validation <span id="valCount" class="count"></span></h2>
+    </div>
+    <div class="scroll" id="validation"><p class="empty">—</p></div>
+  </section>
+
+  <section class="panel log" aria-label="Engine log">
+    <div class="panel-head">
+      <h2>Engine <span id="engineName" class="muted"></span></h2>
+      <div class="progress"><div id="progressBar"></div></div>
+      <span id="engineState" class="muted"></span>
+    </div>
+    <pre class="scroll" id="log"></pre>
+  </section>
+</main>
+
+<dialog id="pasteDlg">
+  <form method="dialog">
+    <h2>Paste a timeline</h2>
+    <textarea id="pasteText" spellcheck="false" placeholder='{"format": "npl-director", "version": 1, ...}'></textarea>
+    <div class="row"><button class="btn" value="cancel">Cancel</button><button class="btn primary" id="pasteOk" value="ok">Load</button></div>
+  </form>
+</dialog>
+<div class="dropzone" id="dropzone">Drop a timeline .json</div>
+</body>
+</html>

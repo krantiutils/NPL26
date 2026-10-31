@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NPL26 Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --ground: #0d1214; --panel: #151c1f; --raise: #1c2528; --line: #263132; --text: #e6ebe9; --muted: #8b9a97;
+  --accent: #e4b922; --live: #e5484d; --good: #46a758; --warn: #f0a020;
+  --display: "Saira Condensed", "Arial Narrow", sans-serif; --body: "IBM Plex Sans", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ground); color: var(--text); font: 14px/1.45 var(--body); }
+.wrap { padding-inline: 16px; padding-block: 14px 20px; max-width: 1600px; margin: 0 auto; display: grid; gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "head head" "fix fix" "game feed" "cmp feed"; }
+header { grid-area: head; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
+h1 { margin: 0; font: 800 28px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); }
+.fixtures { grid-area: fix; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.fx { flex: none; min-width: 210px; text-align: left; font: inherit; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; display: grid; gap: 3px; }
+.fx[aria-pressed="true"] { border-color: var(--accent); }
+.fx .n { font: 600 12px/1 var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.fx .t { font: 600 15px/1.15 var(--display); letter-spacing: .02em; }
+.fx .r { font: 12px var(--mono); color: var(--muted); }
+.pill { font: 600 11px/1 var(--mono); padding: 3px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: .05em; }
+.pill.live { background: var(--live); color: #fff; }
+.pill.completed { background: var(--raise); color: var(--muted); }
+.pill.scheduled { border: 1px solid var(--line); color: var(--muted); }
+.game { grid-area: game; position: relative; background: #000; border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  aspect-ratio: 4 / 3; }
+.game iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.game .empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+.feed { grid-area: feed; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; min-width: 0; }
+.card h2 { margin: 0 0 8px; font: 600 13px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score .big { font: 800 40px/1 var(--display); font-variant-numeric: tabular-nums; }
+.score .ov { font: 500 15px var(--mono); color: var(--muted); }
+.who { margin-top: 6px; display: grid; gap: 2px; font-size: 13px; }
+.who b { font-weight: 500; }
+.who .num { font-family: var(--mono); color: var(--muted); }
+.balls { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+.balls li { display: grid; grid-template-columns: 44px 30px 1fr; gap: 8px; align-items: start; font-size: 13px; }
+.balls .o { font: 12px var(--mono); color: var(--muted); padding-top: 2px; }
+.balls .rr { font: 600 12px/20px var(--mono); text-align: center; border-radius: 3px; background: var(--raise); }
+.balls .rr.b4 { background: #1f6f9f; } .balls .rr.b6 { background: #6b3fa0; } .balls .rr.w { background: var(--live); }
+.balls .rr.x { background: #5a4a14; }
+.cmp { grid-area: cmp; }
+.cmp table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.cmp th, .cmp td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.cmp th { font: 600 12px var(--mono); color: var(--muted); font-weight: 500; }
+.cmp td { font: 500 15px var(--mono); }
+.state { display: inline-flex; align-items: center; gap: 6px; font: 12px var(--mono); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--good); } .dot.wait { background: var(--warn); } .dot.off { background: var(--live); }
+.err { color: var(--live); font: 12px var(--mono); }
+@media (max-width: 980px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "fix" "game" "cmp" "feed"; }
+  .balls { max-height: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>NPL<span>26</span> Live</h1>
+    <div class="sub">Real NPL feed beside the game playing it ball by ball. Pick a match.</div>
+  </header>
+  <nav class="fixtures" id="fixtures" aria-label="Matches"><span class="sub">Loading matches…</span></nav>
+  <section class="game" aria-label="Simulated match"><div class="empty" id="gameEmpty">Pick a live or finished match.</div></section>
+  <section class="cmp card" aria-label="Real against simulated">
+    <h2>Real vs game</h2>
+    <table>
+      <thead><tr><th></th><th>Score</th><th>Overs</th><th>Innings</th></tr></thead>
+      <tbody>
+        <tr><th>Real</th><td id="realScore">–</td><td id="realOvers">–</td><td id="realInn">–</td></tr>
+        <tr><th>Game</th><td id="gameScore">–</td><td id="gameOvers">–</td><td id="gameInn">–</td></tr>
+      </tbody>
+    </table>
+    <p class="state" id="gameState"><span class="dot"></span><span>game not started</span></p>
+  </section>
+  <aside class="feed">
+    <section class="card" aria-label="Real score">
+      <h2 id="feedTitle">Real feed</h2>
+      <div class="score"><span class="big" id="bigScore">–</span><span class="ov" id="bigOvers"></span></div>
+      <div class="who" id="who"></div>
+      <p class="err" id="feedErr" hidden></p>
+    </section>
+    <section class="card" aria-label="Ball by ball">
+      <h2>Ball by ball (latest 20, NPL API)</h2>
+      <ol class="balls" id="balls"></ol>
+    </section>
+  </aside>
+</div>
+<script src="live.js"></script>
+</body>
+</html>

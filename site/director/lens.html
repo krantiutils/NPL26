@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Broadcast Lens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- The real broadcast beside the game playing the same match (served by web/serve.py --media <folder with the
+     recording and its analysis>): the page drives the replay clock (POST /api/director/replay/<match>/clock), so the
+     game gets each ball once the scorer had logged it at that point of the recording. -->
+<style>
+:root {
+  color-scheme: dark;
+  --ground: #0b1014; --panel: #121a20; --raise: #18232b; --line: #23313a; --text: #e5ece9; --muted: #8a9a98;
+  --accent: #f2c14e; --live: #e5484d; --cyan: #4fb3d9; --good: #46a758;
+  --display: "Saira Condensed", "Arial Narrow", sans-serif; --body: "IBM Plex Sans", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ground); color: var(--text); font: 14px/1.45 var(--body); }
+.wrap { max-width: 1900px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 24px; display: grid; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { margin: 0; font: 800 28px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); }
+.feeds { display: grid; gap: 12px; grid-template-columns: minmax(0, 16fr) minmax(0, 12fr); align-items: start; }
+.feed { background: #000; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; position: relative; }
+.feed .tag { position: absolute; top: 8px; left: 8px; z-index: 2; font: 600 12px/1 var(--display); letter-spacing: .12em;
+  text-transform: uppercase; padding: 5px 8px; border-radius: 3px; background: rgba(0, 0, 0, .65); pointer-events: none; }
+video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.game { aspect-ratio: 4 / 3; }
+.game iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font: 13px var(--mono); color: var(--muted); }
+.bar b { color: var(--text); font-weight: 500; }
+.bar label { display: inline-flex; gap: 6px; align-items: center; }
+.bar input { width: 72px; font: inherit; color: var(--text); background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+.bar button { font: inherit; color: var(--text); background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; }
+.dot.ok { background: var(--good); } .dot.wait { background: var(--accent); }
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; min-width: 0; }
+.card h2 { margin: 0 0 8px; font: 600 13px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  display: flex; justify-content: space-between; gap: 8px; }
+.card h2 .t { font: 500 12px var(--mono); letter-spacing: 0; text-transform: none; }
+.cam { font: 800 21px/1.1 var(--display); letter-spacing: .03em; text-transform: uppercase; color: var(--cyan); }
+.action { margin-top: 6px; }
+.tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tg { font: 500 11px/1 var(--mono); padding: 4px 6px; border-radius: 3px; background: var(--raise); color: var(--muted); }
+.tg.on { background: var(--accent); color: #111; } .tg.gfx { background: var(--live); color: #fff; }
+.speech p { margin: 0; color: var(--muted); } .speech p.now { color: var(--text); } .speech p + p { margin-top: 6px; }
+.api { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.api li { display: grid; grid-template-columns: 48px 40px 1fr; gap: 8px; color: var(--muted); }
+.api li.near { color: var(--text); }
+.api .o, .api .r { font-family: var(--mono); font-size: 12px; }
+.tl .lane { position: relative; height: 18px; background: var(--raise); border-radius: 3px; overflow: hidden; cursor: pointer; }
+.tl .lane i { position: absolute; top: 0; bottom: 0; }
+.tl .rows { position: relative; display: grid; gap: 4px; }
+.tl .row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; align-items: center; font: 11px var(--mono); color: var(--muted); }
+.head { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent); pointer-events: none; }
+.err { color: var(--live); font: 12px var(--mono); }
+@media (max-width: 1100px) { .feeds { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Broadcast <span>Lens</span></h1>
+    <div class="sub" id="sub">Real broadcast beside the game playing the same balls.</div>
+  </header>
+  <div class="feeds">
+    <section class="feed"><span class="tag">Broadcast</span><video id="v" controls preload="metadata" playsinline></video></section>
+    <section class="feed game" id="gameBox"><span class="tag">Game</span></section>
+  </div>
+  <div class="bar">
+    <span><span class="dot" id="gDot"></span><span id="gState">game starting…</span></span>
+    <span>broadcast <b id="utc">–</b></span>
+    <label>game lead <input id="lead" type="number" step="5" value="0"> s</label>
+    <button id="restart" type="button">Sync game here</button>
+  </div>
+  <div class="cards">
+    <section class="card"><h2>Mage-VL sees <span class="t" id="vlT">–</span></h2>
+      <div class="cam" id="vlCam">–</div><div class="action" id="vlAction"></div><div class="tags" id="vlTags"></div></section>
+    <section class="card speech"><h2>Commentary <span class="t" id="spT">–</span></h2><div id="speech"></div></section>
+    <section class="card"><h2>Cut <span class="t" id="shT">–</span></h2><div class="cam" id="shot" style="font-size:18px">–</div>
+      <h2 style="margin-top:12px">API ball log</h2><ul class="api" id="api"></ul></section>
+  </div>
+  <section class="card tl"><h2>Timeline <span class="t">click to jump</span></h2>
+    <div class="rows" id="rows">
+      <div class="row"><span>cuts</span><div class="lane" id="lnShots"></div></div>
+      <div class="row"><span>API</span><div class="lane" id="lnApi"></div></div>
+      <div class="head" id="head"></div>
+    </div>
+  </section>
+  <p class="err" id="err" hidden></p>
+</div>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const clock = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  const fail = (m) => { $("err").hidden = false; $("err").textContent = m; };
+  const params = new URLSearchParams(location.search);
+  const dataUrl = params.get("data") || "/media/data.json";
+  let D;
+  try {
+    const r = await fetch(dataUrl, { cache: "no-store" });
+    if (!r.ok) throw new Error(`${dataUrl}: HTTP ${r.status} (start serve.py with --media <folder holding data.json and the recording>)`);
+    D = await r.json();
+  } catch (e) { return fail(e.message); }
+  const v = $("v"), dur = D.duration, match = D.match;
+  v.src = `/media/${D.video}`;
+  $("sub").textContent = `NPL 2026 ${match}: the real broadcast (left) and the game (right) playing the same balls. The game gets a ball once the scorer had logged it at this point of the broadcast.`;
+
+  // ---- the game, following the replay clock
+  const lead = () => Number($("lead").value) || 0;
+  const utcAt = (t) => D.utc0 + t + lead();
+  let clockQueue = Promise.resolve(), seeking = false, seekGeneration = 0;
+  function postClock(t = v.currentTime) {
+    const update = async () => {
+      const r = await fetch(`/api/director/replay/${match}/clock`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ t: utcAt(t) }) });
+      if (!r.ok) throw new Error(`clock: HTTP ${r.status}`);
+    };
+    const result = clockQueue.then(update);
+    clockQueue = result.catch((error) => { console.warn(error); });
+    return result;
+  }
+  let frame = null;
+  // ?view=sim: our simulator (web/sim) on the Kirtipur ground instead of the base game; it starts at the latest ball
+  // released by the clock and follows the replay feed (reloaded on a seek: it loads in a few seconds)
+  const SIM = params.get("view") === "sim";
+  if (SIM) { $("gameBox").style.aspectRatio = "16 / 9"; $("gameBox").querySelector(".tag").textContent = "Simulator"; }
+  async function startGame() {
+    await postClock();   // the script the game loads first already holds every ball logged before this point
+    frame?.remove();
+    frame = document.createElement("iframe");
+    if (SIM) {
+      const r = await fetch(`/api/director/replay/${match}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(`replay script: HTTP ${r.status}`);
+      const n = (await r.text()).split("\n").filter((l) => l.startsWith("ball ")).length;
+      frame.src = `/sim/?match=${match}&src=replay&live=1&ground=kirtipur&ball=${Math.max(0, n - 1)}`;
+    } else frame.src = `/?director_live=${encodeURIComponent(`/api/director/replay/${match}`)}`;
+    frame.allow = "cross-origin-isolated; fullscreen; autoplay; gamepad";
+    frame.title = "The game playing the match";
+    $("gameBox").append(frame);
+  }
+  let seekQueue = Promise.resolve();
+  function syncGame() {
+    if (SIM) return startGame();
+    const generation = ++seekGeneration, t = v.currentTime;
+    seeking = true;
+    const sync = async () => {
+      if (generation !== seekGeneration) return;
+      await postClock(t);
+      const deadline = performance.now() + 120000;
+      while (!frame?.contentWindow?.rcModule?.rcDirectorRefresh) {
+        if (performance.now() > deadline) throw new Error('Game startup timed out while seeking.');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      if (generation !== seekGeneration) return;
+      const state = await frame.contentWindow.rcModule.rcDirectorRefresh(true);
+      if (generation === seekGeneration) {
+        $("err").hidden = true;
+        window.lensLastSeek = { time: t, target: state.seek, serial: state.seek_serial, state };
+      }
+    };
+    const result = seekQueue.then(sync);
+    seekQueue = result.catch((error) => { console.error('Lens seek:', error); fail(error.message); })
+      .finally(() => { if (generation === seekGeneration) seeking = false; });
+    return result;
+  }
+  $("restart").onclick = () => { syncGame().catch(() => {}); };
+  v.addEventListener("seeked", () => { syncGame().catch(() => {}); });
+  $("lead").addEventListener("change", () => { syncGame().catch(() => {}); });
+  setInterval(() => { if (!v.paused && !seeking) postClock().catch((error) => fail(error.message)); }, 2000);
+  startGame().catch((error) => fail(error.message));
+
+  function readGame() {
+    if (SIM) {
+      const s = frame?.contentWindow?.sim;
+      if (!s?.match) return;
+      const b = s.match.balls[s.i]?.ev;
+      $("gDot").className = s.i >= s.match.balls.length - 1 ? "dot wait" : "dot ok";
+      $("gState").textContent = `simulator: ball ${s.i + 1} of ${s.match.balls.length}${b ? ` · ${b.over}.${b.ball} ${b.bowler} to ${b.batter}` : ""}`;
+      return;
+    }
+    const M = frame?.contentWindow?.rcModule;
+    if (!M || !M._director_state) return;
+    let g;
+    try {
+      const p = M._director_state(), mem = new Uint8Array(M.wasmMemory.buffer);
+      let e = p; while (mem[e] && e - p < 400) e++;
+      g = JSON.parse(new TextDecoder().decode(mem.slice(p, e)));
+    } catch (err) { console.warn('Lens game state:', err); return; }
+    const dot = $("gDot");
+    if (g.catchup) { dot.className = "dot wait"; $("gState").textContent = `game catching up: ball ${g.played} of ${g.scripted}`; }
+    else if (g.holding) { dot.className = "dot wait"; $("gState").textContent = `game waiting for the broadcast: ${g.done ?? g.played} balls played`; }
+    else { dot.className = "dot ok"; $("gState").textContent = `game playing ball ${g.played} · ${g.runs}/${g.wickets} (${g.overs}.${g.balls})`; }
+  }
+  setInterval(readGame, 1000);
+
+  // ---- analysis panels and timeline
+  const COL = { "main bowling camera": "#4fb3d9", "high wide follow": "#2f7fa8", "fielder follow": "#3aa17e", "fielder / umpire": "#2e7d62",
+    "ball in the sky": "#6b5bd6", "night sky / lights": "#4a3f99", "batter close-up": "#e0864f", "batter / dugout": "#b9663a",
+    "bowler / fielder close-up": "#d6a03a", "crowd wide": "#8e8e8e", "crowd (boundary)": "#b0b0b0", "fans close": "#a68cc4",
+    "VIP box": "#c45b9b", "WICKET graphic": "#e5484d", "wipe / summary graphic": "#a33a3e", "fielders + wipe": "#7d4a4c", "unclassified": "#444" };
+  const pct = (t) => `${(Math.max(0, Math.min(dur, t)) / dur * 100).toFixed(3)}%`;
+  $("lnShots").innerHTML = D.shots.map((s) => `<i title="${esc(s.group)}" style="left:${pct(s.t0)};width:calc(${pct(s.t1)} - ${pct(s.t0)});background:${COL[s.group] || "#444"};border-right:1px solid #0b1014"></i>`).join("");
+  $("lnApi").innerHTML = D.api.map((a) => `<i title="${esc(a.over || "")} ${esc(a.text)}" style="left:${pct(a.t)};width:3px;background:${a.type === "wicket" || a.runs === "WK" ? "#e5484d" : a.runs === "6" ? "#8a3ffc" : a.runs === "4" ? "#1f7ae0" : "#e5ece9"}"></i>`).join("");
+  for (const id of ["lnShots", "lnApi"]) $(id).addEventListener("click", (e) => {
+    const b = e.currentTarget.getBoundingClientRect();
+    v.currentTime = Math.max(0, Math.min(1, (e.clientX - b.left) / b.width)) * dur;
+  });
+  const at = (arr, t, key = "t") => { let lo = 0, hi = arr.length - 1, best = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (arr[m][key] <= t) { best = m; lo = m + 1; } else hi = m - 1; } return best; };
+  let lastSec = -1;
+  function update() {
+    const t = v.currentTime, lane = $("lnShots");
+    $("head").style.left = `calc(${lane.offsetLeft}px + ${(t / dur) * lane.offsetWidth}px)`;
+    if (Math.floor(t) === lastSec) return;
+    lastSec = Math.floor(t);
+    $("utc").textContent = new Date(utcAt(t) * 1000).toISOString().slice(11, 19) + " UTC";
+    const f = D.frames[at(D.frames, t)];
+    if (f) {
+      $("vlT").textContent = clock(f.t);
+      $("vlCam").textContent = (f.camera || "–").replace(/_/g, " ");
+      $("vlAction").textContent = f.action;
+      $("vlTags").innerHTML = [f.subjects && `<span class="tg">${esc(f.subjects)}</span>`, f.ball && '<span class="tg on">ball visible</span>',
+        f.graphic && !/score strip/i.test(f.graphic) && `<span class="tg gfx">${esc(f.graphic)}</span>`, f.emotion && `<span class="tg">${esc(f.emotion)}</span>`].filter(Boolean).join("");
+    }
+    const si = at(D.speech, t, "t0");
+    $("spT").textContent = si >= 0 ? clock(D.speech[si].t0) : "–";
+    $("speech").innerHTML = [si - 1, si].filter((i) => i >= 0).map((i) => `<p class="${i === si && t <= D.speech[i].t1 + 1.5 ? "now" : ""}">${esc(D.speech[i].text)}</p>`).join("");
+    const sh = D.shots[at(D.shots, t, "t0")];
+    $("shT").textContent = sh ? `${clock(sh.t0)}–${clock(sh.t1)}` : "–";
+    $("shot").textContent = sh ? sh.group : "–";
+    $("shot").style.color = sh ? COL[sh.group] || "" : "";
+    const ai = at(D.api, t);
+    $("api").innerHTML = D.api.slice(Math.max(0, ai - 2), ai + 3).map((a) => `<li class="${Math.abs(a.t - t) < 45 ? "near" : ""}"><span class="o">${esc(a.over || clock(a.t))}</span><span class="r">${esc(a.runs || a.type)}</span><span>${esc(a.text)}</span></li>`).join("");
+  }
+  v.addEventListener("timeupdate", update);
+  v.addEventListener("seeked", update);
+  window.addEventListener("resize", update);
+  update();
+})();
+</script>
+</body>
+</html>

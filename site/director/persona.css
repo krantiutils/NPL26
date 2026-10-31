@@ -1,0 +1,50 @@
+/* Kaka — between-ball host. Flat vector, broadcast palette, bottom-right.
+   Never covers the striker's end: the live action sits centre/upper-left. */
+
+.kaka {
+  position: absolute;
+  right: 0.8cqw;
+  bottom: 0;
+  width: 25cqw;
+  aspect-ratio: 320 / 200;
+  height: auto;
+  pointer-events: none;
+  transform: translateY(110%);
+  opacity: 0;
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms linear;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.45));
+  z-index: 40;
+}
+.kaka.in  { transform: translateY(0); opacity: 1; }
+.kaka.out { transform: translateY(110%); opacity: 0; }
+
+.kaka svg { width: 100%; height: 100%; overflow: visible; }
+.kaka .head { transform-origin: 252px 86px; animation: kaka-bob 3.6s ease-in-out infinite; }
+@keyframes kaka-bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }
+
+/* palette */
+.kaka .skin     { fill: #e8b48a; stroke: #0b1b2b; stroke-width: 3; }
+.kaka .cap      { fill: #e63329; stroke: #0b1b2b; stroke-width: 3; }
+.kaka .capbrim  { fill: #b7261e; stroke: #0b1b2b; stroke-width: 3; }
+.kaka .body     { fill: #13314d; stroke: #0b1b2b; stroke-width: 3; }
+.kaka .collar   { fill: #f5c542; stroke: #0b1b2b; stroke-width: 2.5; }
+.kaka .arm      { stroke: #e8b48a; stroke-width: 12; stroke-linecap: round; }
+.kaka .eye      { fill: #fff; stroke: #0b1b2b; stroke-width: 2; }
+.kaka .pupil    { fill: #0b1b2b; }
+.kaka .eyes     { transform-origin: 252px 88px; transition: transform 90ms linear; }
+.kaka .eyes.blink { transform: scaleY(.12); }
+.kaka .stache   { stroke: #0b1b2b; stroke-width: 5; fill: none; stroke-linecap: round; }
+.kaka .mouth    { fill: #5b1f1a; stroke: #0b1b2b; stroke-width: 2; transition: ry 70ms linear; }
+
+/* the little screen */
+.kaka .tablet { transform: rotateY(-78deg) translateX(-8px); opacity: 0;
+                transition: transform 250ms cubic-bezier(.2,.9,.2,1), opacity 160ms linear; }
+.kaka .tablet.open { transform: rotateY(0) translateX(0); opacity: 1; }
+.kaka .tframe  { fill: #f5c542; stroke: #0b1b2b; stroke-width: 3; }
+.kaka .tscreen { fill: #0b1b2b; }
+.kaka .tbar    { fill: #2a4a68; }
+.kaka .ttitle  { fill: #ffffff; font: 700 8.5px/1 ui-monospace, Menlo, monospace; letter-spacing: .06em; }
+.kaka .tline   { fill: #9fb6c9; font: 7px/1 ui-monospace, Menlo, monospace; }
+.kaka .tablet[data-kind="replay"]   .tbar { fill: #e63329; }
+.kaka .tablet[data-kind="poll"]     .tbar { fill: #22a06b; }
+.kaka .tablet[data-kind="decision"] .tbar { fill: #f5c542; }

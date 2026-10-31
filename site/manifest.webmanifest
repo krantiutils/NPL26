@@ -1,0 +1,25 @@
+{
+  "id": "./?mobile=1",
+  "name": "NPL26",
+  "short_name": "NPL26",
+  "start_url": "./?mobile=1",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#070b08",
+  "theme_color": "#070b08",
+  "icons": [
+    {
+      "src": "npl-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "npl-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
