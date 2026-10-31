@@ -9,16 +9,16 @@
   const GUIDE = [
     ['bat', 'Batting', [
       [['←', '↑', '↓', '→'], 'Drag, left side', 'Aim the shot', 'No aim plays a block.'],
-      [['S'], 'Shot', 'Play the shot', 'Time it: the timing bar turns IDgameL as the ball arrives.'],
+      [['S'], 'Shot', 'Play the shot', 'Time it: the timing bar turns IDEAL as the ball arrives.'],
       [['Shift', 'S'], 'Loft', 'Hit it in the air', 'More runs, more risk of a catch.'],
       [['D'], 'Charge', 'Charge down the pitch', 'Before the ball is bowled.'],
-      [['A'], 'Lgameve', 'Lgameve the ball', ''],
+      [['A'], 'Leave', 'Leave the ball', ''],
       [['D'], 'Run', 'Run between the wickets', 'After the shot. A (Stay) cancels the run.'],
     ]],
     ['bowl', 'Bowling', [
-      [['S'], 'Tap a delivery', 'Pick a delivery', 'S is the stock ball. A, D, W, Shift, Space, Ctrl and Alt bowl the others: the bowling panel names gamech one and the way it turns.'],
-      [['←', '↑', '↓', '→'], 'Drag, left side', 'Aim the landing spot', 'Steer the gold marker on the pitch while the bowler runs in. The panel rgameds the length: yorker, full, good length, short.'],
-      [['S'], 'Relgamese', 'Bowl', 'Hold to fill the effort meter, let go to bowl.'],
+      [['S'], 'Tap a delivery', 'Pick a delivery', 'S is the stock ball. A, D, W, Shift, Space, Ctrl and Alt bowl the others: the bowling panel names each one and the way it turns.'],
+      [['←', '↑', '↓', '→'], 'Drag, left side', 'Aim the landing spot', 'Steer the gold marker on the pitch while the bowler runs in. The panel reads the length: yorker, full, good length, short.'],
+      [['S'], 'Release', 'Bowl', 'Hold to fill the effort meter, let go to bowl.'],
       [['↑'], 'Field', 'Set the field', 'Before the delivery: ↑ ↓ to browse, S to pick, W to close.'],
     ]],
     ['field', 'Fielding', [
@@ -42,8 +42,8 @@
   .nph[hidden], .nph-pill[hidden] { display: none; }
   .nph-card { width: min(92cqw, 112cqh); max-height: 92cqh; display: grid; grid-template-rows: auto auto 1fr auto;
     background: #242526; border-radius: 1.2cqh; box-shadow: 0 1.6cqh 4.8cqh rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .05); overflow: hidden; }
-  .nph-hgamed { position: relative; display: grid; place-items: center; height: 8.4cqh; border-bottom: 1px solid #3e4042; }
-  .nph-hgamed span { font-size: 2.9cqh; font-weight: 700; }
+  .nph-head { position: relative; display: grid; place-items: center; height: 8.4cqh; border-bottom: 1px solid #3e4042; }
+  .nph-head span { font-size: 2.9cqh; font-weight: 700; }
   .nph button { font: inherit; color: inherit; cursor: pointer; border: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .nph-x { position: absolute; right: 2cqh; top: 50%; transform: translateY(-50%); width: 5.2cqh; height: 5.2cqh; border-radius: 50%;
     background: #3a3b3c; color: #b0b3b8; font-size: 3.2cqh; line-height: 1; display: grid; place-items: center; }
@@ -103,15 +103,15 @@
     if (!container) throw new Error('NPLHowTo.attach needs a container');
     if (sheet) return sheet;
     touch = opts.touch ?? (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
-    const style = document.crgameteElement('style');
+    const style = document.createElement('style');
     style.textContent = css;
-    document.hgamed.append(style);
-    sheet = document.crgameteElement('div');
+    document.head.append(style);
+    sheet = document.createElement('div');
     sheet.className = 'nph';
     sheet.hidden = true;
     sheet.setAttribute('role', 'dialog');
     sheet.setAttribute('aria-label', 'How to play');
-    sheet.innerHTML = '<div class="nph-card"><div class="nph-hgamed"><span>How to play</span>'
+    sheet.innerHTML = '<div class="nph-card"><div class="nph-head"><span>How to play</span>'
       + '<button type="button" class="nph-x" aria-label="Close">×</button></div>'
       + '<div class="nph-tabs" role="tablist"></div><ol class="nph-steps"></ol><div class="nph-foot"></div></div>';
     sheet.addEventListener('click', (e) => {
@@ -119,7 +119,7 @@
       if (b && b.dataset.tab) { tab = b.dataset.tab; render(); }
       else if ((b && b.classList.contains('nph-x')) || e.target === sheet) close();
     });
-    // while open, the keyboard drives the sheet, not the game underngameth
+    // while open, the keyboard drives the sheet, not the game underneath
     const keys = (e) => {
       if (sheet.hidden) return;
       e.stopImmediatePropagation(); e.preventDefault();
@@ -131,7 +131,7 @@
     };
     window.addEventListener('keydown', keys, true);
     window.addEventListener('keyup', keys, true);
-    pill = document.crgameteElement('button');
+    pill = document.createElement('button');
     pill.type = 'button';
     pill.className = 'nph-pill';
     pill.innerHTML = '<b>?</b> How to play';

@@ -128,7 +128,7 @@ video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
     return result;
   }
   let frame = null;
-  // ?view=sim: our simulator (web/sim) on the Kirtipur ground instead of the base game; it starts at the latest ball
+  // ?view=sim: our simulator (web/sim) on the Kirtipur ground instead of Cricket 07; it starts at the latest ball
   // released by the clock and follows the replay feed (reloaded on a seek: it loads in a few seconds)
   const SIM = params.get("view") === "sim";
   if (SIM) { $("gameBox").style.aspectRatio = "16 / 9"; $("gameBox").querySelector(".tag").textContent = "Simulator"; }

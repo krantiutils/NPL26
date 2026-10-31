@@ -1,4 +1,4 @@
-// the base game in the browser: copies the player's own game folder into OPFS (once; it never leaves the
+// Cricket 07 in the browser: copies the player's own game folder into OPFS (once; it never leaves the
 // computer), starts the recompiled build (build/recomp.js), replays its frames with WebGPU and feeds it
 // input and audio.
 //
@@ -558,6 +558,8 @@ async function run(session) {
       if (params.has('log')) m.ENV.RC_LOG = '1';
       if (params.has('pathtrace')) m.ENV.RC_PATH_TRACE = '/dev/stderr';   // archive paths the game opens (data pruning)
       if (params.has('sidelog')) m.ENV.RC_SIDE_LOG = '1';   // team-select controller sides (host/director.c side_log)
+      if (params.has('uitrace')) m.ENV.RC_UI_TRACE = '1';   // overlay/window RE trace (host/director.c)
+      if (params.get('skip')) m.ENV.RC_SKIP_OVERLAY = params.get('skip');   // diagnostic: overlay windows left out
       if (params.has('pads')) m.ENV.RC_PADS = params.get('pads');
       if (params.has('queue')) m.ENV.RC_QUEUE = params.get('queue');
       if (directorText) m.ENV.RC_DIRECTOR_TEXT = directorText;
@@ -581,11 +583,16 @@ async function run(session) {
   // the time a frame has to simulate are counted in those (netplay.js: autoDelay), so following a 120 Hz
   // display would halve both. Solo play follows the display. A frame is due every 1/60 s, with a little
   // tolerance so a 60 Hz display's own jitter doesn't skip one.
-  let due = 0;
+  // Phones (?mobile) are capped at 60 too: a 120 Hz screen would otherwise make the game simulate twice the frames.
+  const capped = !!session || params.has('mobile');
+  let due = 0, pumpMs = 0;
   const frame = (t) => {
     poll(M);
-    if (!session || t >= due - 4) {
-      if (M._rc_gpu_pump(1)) {
+    if (!capped || t >= due - 4) {
+      const p0 = performance.now();
+      const presented = M._rc_gpu_pump(1);
+      pumpMs += performance.now() - p0;
+      if (presented) {
         due = Math.max(due + 1000 / 60, t - 4);
         if (!firstFrame) { firstFrame = true; if (!directorText) bar.done(); }   // the game is drawing: the bar goes
       }
@@ -593,7 +600,40 @@ async function run(session) {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
-  if (!session && !directorText) skipTitle(M);   // the Director's own autopilot drives the menus
+  // ?perf: per second, frames shown, the game thread's busy time per frame (wall minus its waits for the page
+  // and its own Sleep), the page's time running the GPU commands per frame, and draw calls in the last frame
+  if (params.has('perf')) {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;left:8px;top:8px;z-index:20;font:12px/1.3 monospace;color:#fff;' +
+      'background:rgba(0,0,0,.6);padding:4px 6px;pointer-events:none;white-space:pre';
+    document.body.appendChild(el);
+    let f0 = M._rc_perf(0), b0 = M._rc_perf(1), t0 = performance.now(), p0 = pumpMs;
+    setInterval(() => {
+      const f = M._rc_perf(0), b = M._rc_perf(1), t = performance.now(), n = Math.max(1, f - f0);
+      el.textContent = `${((f - f0) * 1000 / (t - t0)).toFixed(1)} fps  game ${((t - t0 - (b - b0)) / n).toFixed(1)} ms` +
+        `  gpu ${((pumpMs - p0) / n).toFixed(1)} ms  ${M._rc_perf(2)} draws  ${canvas.width}x${canvas.height}`;
+      f0 = f; b0 = b; t0 = t; p0 = pumpMs;
+    }, 1000);
+  }
+  // the title's key: only without NPL26's own setup screens (they start the match from the title themselves)
+  if (!session && !directorText && (params.has('nativemenus') || !window.NPLSetup)) skipTitle(M);
+  // our score bar for single-player matches (web/scorebar.js); live Director matches have the broadcast bar
+  if (!session && !directorText && !params.get('director_live') && window.NPLScoreBar && M._input_touch_state)
+    NPLScoreBar.start($('stage'), (f) => M._input_touch_state(f), () => {
+      if (!M._hud_state) return null;
+      const ptr = M._hud_state(), mem = new Uint8Array(M.wasmMemory.buffer);
+      let end = ptr;
+      while (mem[end]) end++;
+      return JSON.parse(new TextDecoder().decode(mem.slice(ptr, end)));
+    });   // the Director's own autopilot drives the menus
+  // our way into a match (web/setup.js): home, setup, toss, loading; director.c runs the game's menus behind it
+  // How to Play in the game (web/howto.js): from the home screen, and a pill during a match. Attached before the setup
+  // screens so its keys go first while it is open.
+  if (!session && !directorText && !params.get('director_live') && window.NPLHowTo && M._input_touch_state && M._setup_state)
+    NPLHowTo.attach($('stage'), { inMatch: () => (M._input_touch_state(1) | 0) === 1 && M._setup_state() === 0 });
+  if (!session && !directorText && !params.get('director_live') && !params.has('nativemenus') && window.NPLSetup && M._npl_setup && M._setup_state)   // ?nativemenus: diagnostics
+    NPLSetup.start($('stage'), { readField: (f) => M._input_touch_state(f), state: () => M._setup_state(),
+      setup: (home, away, stadium, overs, homeBats) => M._npl_setup(home, away, stadium, overs, homeBats) });
   if (params.get('director_live')) followDirector(M, params.get('director_live'), directorText);
   if (directorText) directorLoading(M, bar);
   // broadcast graphics (director/broadcast.js) need the live match's timeline for the names
@@ -646,12 +686,11 @@ async function boot() {
     $('help').classList.remove('hidden');
   };
 
-  $('reset').onclick = (e) => { e.preventDefault(); show('loading'); showPicker('Choose your the base game folder.'); };
   try {
     if (await syncFromServer()) { ready(); return; }
   } catch (err) { status(err.message); return; }
   if (!(await readMarker())) {
-    showPicker('Choose your the base game folder to start.');
+    showPicker('Choose your Cricket 07 folder to start.');
     return;
   }
   ready();
@@ -825,17 +864,15 @@ function setupOnline() {
   };
 }
 
-// Keyboard cheat sheet beside the stage: in-game prompts use controller glyphs (triangle/circle/×/square,
-// L1, R1), so keyboard players need a reference. The CSS (index.html) reserves the panel's space on
-// viewports wide enough and shrinks the stage to match; the body's .kbd-off class (set when the player
-// dismisses the panel, remembered in localStorage) hides the panel and lets the stage reclaim the space.
+// How to Play under the game (web/howto.js fills it); whether it is open is remembered
 function setupKbdHelp() {
-  const off = () => { try { return localStorage.getItem('rc-kbd') === 'hide'; } catch { return false; } };
-  const save = (v) => { try { localStorage.setItem('rc-kbd', v); } catch { /* storage blocked */ } };
-  const apply = () => document.body.classList.toggle('kbd-off', off());
-  $('kbd-close').onclick = () => { save('hide'); apply(); };
-  $('kbd-show').onclick = () => { save('show'); apply(); };
-  apply();
+  const box = $('howto');
+  if (!box || !window.NPLHowTo) { console.error('[howto] strip or web/howto.js missing'); return; }
+  NPLHowTo.page($('howto-body'));
+  try { if (localStorage.getItem('npl-howto') === 'hide') box.open = false; } catch { /* storage blocked */ }
+  box.addEventListener('toggle', () => {
+    try { localStorage.setItem('npl-howto', box.open ? 'show' : 'hide'); } catch { /* storage blocked */ }
+  });
 }
 
 setupFullscreen();

@@ -4,48 +4,81 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NPL26</title>
-<meta name="theme-color" content="#070b08">
+<meta name="theme-color" content="#18191a">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
+  /* Poppins (web/fonts/OFL.txt), 400/500/600, latin */
+  @font-face { font-family: Poppins; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/poppins-400.woff2) format('woff2'); }
+  @font-face { font-family: Poppins; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/poppins-500.woff2) format('woff2'); }
+  @font-face { font-family: Poppins; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/poppins-600.woff2) format('woff2'); }
   :root {
-    --bg: #070b08; --fg: #eef4ef; --muted: #9fb3a5; --faint: #6f8576;
-    --accent: #34b866; --accent-hi: #45cf79; --ball: #d23a2f;
-    --card: rgba(255, 255, 255, .055); --card-hi: rgba(255, 255, 255, .09); --line: rgba(255, 255, 255, .12);
-    --field: rgba(0, 0, 0, .28); --radius: 14px;
+    /* Facebook dark mode */
+    --bg: #18191a; --surface: #242526; --fg: #e4e6eb; --muted: #b0b3b8; --faint: #8a8d91;
+    --accent: #2d88ff; --accent-hi: #4599ff; --primary: #1877f2; --primary-hi: #166fe5; --ball: #c8102e;
+    --card: #242526; --card-hi: #3a3b3c; --line: #3e4042; --field: #3a3b3c; --radius: 8px;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .2);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    font: 15px/1.45 Poppins, "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif; }
   main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 12px; padding: 16px; }
   .credit { color: var(--muted); font-size: 13px; text-align: center; }
   .credit a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; }
   .credit a:hover { color: var(--fg); }
-  /* The 4:3 stage is centred. On viewports wide enough to fit a side-panel reference without crowding
-     the stage, 440px is reserved symmetrically (220 each side) so the panel sits in that gap and the
-     stage stays centred rather than off-set. On narrow viewports the panel is hidden and the stage uses
-     the full width. The .kbd-off body class (set when the player dismisses the panel) frees the space. */
-  #stage { position: relative; width: min(100%, calc((100vh - 72px) * 4 / 3)); aspect-ratio: 4 / 3; background: #000;
-    border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
-  @media (min-width: 1120px) {
-    body:not(.kbd-off) #stage { width: min(calc(100% - 440px), calc((100vh - 72px) * 4 / 3)); }
-  }
+  /* The 4:3 stage is centred; its height leaves room for the How to Play strip's bar below it. */
+  #stage { position: relative; width: min(100%, calc((100vh - 120px) * 4 / 3)); aspect-ratio: 4 / 3; background: #000;
+    border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
   canvas { width: 100%; height: 100%; display: block; cursor: none; }
   .hidden { display: none !important; }
 
   /* the launcher: a floodlit pitch behind the menus */
   #panel { position: absolute; inset: 0; overflow: auto; display: grid; place-items: center; padding: 28px;
-    background:
-      radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, .10), transparent 60%),
-      repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 9%, transparent 9% 18%),
-      radial-gradient(140% 120% at 50% 110%, #123d22 0%, #0b2414 45%, #060d08 100%); }
+    background: var(--bg); }
   .view { width: min(100%, 560px); text-align: center; animation: rise .25s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
   @media (prefers-reduced-motion: reduce) { .view { animation: none; } }
 
-  .brand { margin: 0 auto 10px; font-size: 34px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+  .brand { margin: 0 auto 6px; font-size: 44px; font-weight: 700; letter-spacing: -.01em; color: var(--fg); }
+  .brand b { color: var(--accent); font-weight: 700; }
+  .play-big { font-size: 17px; font-weight: 600; line-height: 1; color: #fff; cursor: pointer; padding: 0 48px; height: 44px;
+    border: 0; border-radius: 6px; background: var(--primary); transition: background .1s ease; }
+  .play-big:hover { background: var(--primary-hi); }
+  .play-big:active { transform: scale(.98); }
   .tagline { margin: 0 0 26px; color: var(--muted); }
+  /* home: one delivery on a loop - pitches (dust), hits the stumps, the bails fly, the speed pops up (3.6 s) */
+  .hero { position: relative; width: min(100%, 360px); margin: 0 auto 8px; }
+  .hero svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .hero .pitch { fill: var(--card-hi); }
+  .hero .crease { fill: var(--line); }
+  .hero .stumps rect { fill: var(--fg); }
+  .hero .stumps { transform-box: fill-box; transform-origin: 50% 100%; animation: hero-stumps 3.6s infinite; }
+  .hero .bail { fill: var(--fg); transform-box: fill-box; transform-origin: center; }
+  .hero .b1 { animation: hero-bail1 3.6s infinite; } .hero .b2 { animation: hero-bail2 3.6s infinite; }
+  .hero .dust { fill: var(--muted); opacity: 0; transform-box: fill-box; transform-origin: center; animation: hero-dust 3.6s infinite; }
+  .hero .ball { offset-path: path("M 26 34 Q 128 2 206 108 Q 250 66 302 90"); offset-rotate: 0deg; animation: hero-ball 3.6s infinite; }
+  .hero .ball circle { fill: var(--ball); }
+  .hero .seam { fill: none; stroke: #f5d9a8; stroke-width: 1.6; }
+  .hero .stitch { fill: none; stroke: #7a0719; stroke-width: .8; stroke-dasharray: 1 1.6; }
+  .hero .spin { animation: hero-spin .5s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .hero .speed { position: absolute; right: 0; top: 4px; padding: 4px 10px; border-radius: 99px; background: var(--card-hi); color: var(--fg);
+    font-size: 13px; font-weight: 600; opacity: 0; animation: hero-speed 3.6s infinite; }
+  @keyframes hero-ball { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 62% { offset-distance: 100%; opacity: 1; }
+    80% { offset-distance: 100%; opacity: 1; } 92%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes hero-spin { to { transform: rotate(-360deg); } }
+  @keyframes hero-dust { 0%, 40% { opacity: 0; transform: scale(.4); } 43% { opacity: .55; transform: scale(1); } 56%, 100% { opacity: 0; transform: scale(1.8, 1.3); } }
+  @keyframes hero-stumps { 0%, 61% { transform: none; } 64% { transform: rotate(6deg); } 68% { transform: rotate(-3deg); } 72%, 100% { transform: none; } }
+  @keyframes hero-bail1 { 0%, 61% { transform: none; opacity: 1; } 78% { transform: translate(-22px, -46px) rotate(-200deg); opacity: 1; }
+    88% { transform: translate(-30px, -30px) rotate(-280deg); opacity: 0; } 89%, 100% { transform: none; opacity: 0; } }
+  @keyframes hero-bail2 { 0%, 61% { transform: none; opacity: 1; } 78% { transform: translate(18px, -54px) rotate(240deg); opacity: 1; }
+    88% { transform: translate(26px, -36px) rotate(320deg); opacity: 0; } 89%, 100% { transform: none; opacity: 0; } }
+  /* the bails come back with the next ball */
+  @keyframes hero-speed { 0%, 62% { opacity: 0; transform: translateY(6px); } 66%, 86% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .hero .ball, .hero .spin, .hero .stumps, .hero .bail, .hero .dust, .hero .speed { animation: none; }
+    .hero .ball { offset-distance: 62%; } .hero .speed { opacity: 1; }
+  }
   .small { font-size: 13px; color: var(--faint); }
   p { margin: 8px 0; }
 
@@ -53,30 +86,30 @@
   .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 520px) { .choices { grid-template-columns: 1fr; } }
   .choice { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 20px 18px; text-align: left;
-    border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: var(--fg); font: inherit;
+    border: 0; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); color: var(--fg); font: inherit;
     cursor: pointer; transition: transform .12s ease, background .12s ease, border-color .12s ease; }
-  .choice:hover { transform: translateY(-2px); background: var(--card-hi); border-color: rgba(255, 255, 255, .22); }
+  .choice:hover { background: var(--card-hi); }
   .choice:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
   .choice svg { width: 30px; height: 30px; color: var(--accent); }
   .choice b { font-size: 18px; }
   .choice span { color: var(--muted); font-size: 14px; }
 
   /* buttons and fields */
-  button { font: inherit; cursor: pointer; border-radius: 10px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border: 0;
-    background: var(--accent); color: #04110a; font-weight: 700; transition: background .12s ease; }
-  .btn:hover { background: var(--accent-hi); }
-  .btn:disabled { opacity: .45; cursor: default; background: var(--accent); }
-  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); font-weight: 600; }
-  .btn.ghost:hover { background: var(--card-hi); }
+  button { font: inherit; cursor: pointer; border-radius: 6px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border: 0;
+    border-radius: 6px; background: var(--primary); color: #fff; font-weight: 600; transition: background .1s ease; }
+  .btn:hover { background: var(--primary-hi); }
+  .btn:disabled { opacity: .45; cursor: default; background: var(--primary); }
+  .btn.ghost { background: var(--card-hi); color: var(--fg); border: 0; font-weight: 600; }
+  .btn.ghost:hover { background: #4e4f50; }
   .back { position: absolute; top: 16px; left: 16px; padding: 6px 12px; border: 0; background: transparent; color: var(--muted); }
   .back:hover { color: var(--fg); }
-  input, select { font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--line); border-radius: 10px;
+  input, select { font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--line); border-radius: 6px;
     padding: 10px 12px; min-width: 0; }
   input::placeholder { color: var(--faint); }
   label.field { display: grid; gap: 6px; text-align: left; font-size: 13px; color: var(--muted); }
 
-  .card { padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); text-align: left; }
+  .card { padding: 16px; border: 0; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); text-align: left; }
   .card h2 { margin: 0 0 4px; font-size: 16px; }
   .stack { display: grid; gap: 14px; }
   .row { display: flex; gap: 10px; }
@@ -117,10 +150,9 @@
   /* fullscreen: the stage fills the screen and the game letterboxes itself inside the canvas */
   #stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
   /* ?broadcast=1 (director/tools/streamer.py): the game alone, edge to edge, as a TV picture */
-  body.broadcast { overflow: hidden;
-    background: radial-gradient(120% 90% at 50% 0%, #12263a 0%, #0a1522 45%, #060c14 100%); }
+  body.broadcast { overflow: hidden; background: #000; }
   body.broadcast #stage { position: fixed; top: 0; left: 50%; transform: translateX(-50%); height: 100vh; width: calc(100vh * 4 / 3) !important; border-radius: 0; box-shadow: none; }
-  body.broadcast #kbd, body.broadcast #kbd-show, body.broadcast .credit, body.broadcast #fs { display: none !important; }
+  body.broadcast #howto, body.broadcast .credit, body.broadcast #fs { display: none !important; }
   #stage:-webkit-full-screen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
   #fs { position: absolute; right: 12px; bottom: 12px; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center;
     padding: 0; border: 1px solid rgba(255, 255, 255, .18); border-radius: 10px; background: rgba(0, 0, 0, .55); color: #fff;
@@ -136,43 +168,36 @@
     color: #fff; font: 12px/1.5 ui-sans-serif, system-ui, sans-serif; pointer-events: none; backdrop-filter: blur(4px); }
   #netstatus.bad { background: rgba(170, 20, 20, .88); }
 
-  /* keyboard cheat sheet: shows beside the stage when the viewport has room, because in-game prompts
-     use controller glyphs (triangle/circle/×/square, L1, R1) that keyboard players would otherwise have
-     to guess at. Hidden in fullscreen, on narrow viewports and by choice (remembered in localStorage). */
-  #kbd { position: fixed; top: 50%; right: 14px; transform: translateY(-50%); z-index: 2;
-    width: 204px; max-height: calc(100vh - 24px); overflow: auto;
-    padding: 12px 14px 14px; border: 1px solid var(--line); border-radius: var(--radius);
-    background: rgba(10, 18, 12, .78); color: var(--fg); font-size: 13px; line-height: 1.45;
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, .5); display: none; }
-  @media (min-width: 1120px) {
-    body:not(.kbd-off) #stage:not(:fullscreen) ~ #kbd { display: block; }
-    body.kbd-off #stage:not(:fullscreen) ~ #kbd-show { display: grid; }
-  }
-  #kbd .kbd-head { display: flex; justify-content: space-between; align-items: center;
-    margin: -4px 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  #kbd .kbd-head b { font-size: 13px; letter-spacing: .02em; }
-  #kbd-close { background: transparent; border: 0; color: var(--muted); font-size: 20px; line-height: 1;
-    padding: 0 4px; cursor: pointer; border-radius: 6px; }
-  #kbd-close:hover { color: var(--fg); background: var(--card-hi); }
-  #kbd h3 { font: 600 11px/1.4 ui-sans-serif, system-ui, sans-serif; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--muted); margin: 12px 0 4px; }
-  #kbd h3:first-of-type { margin-top: 0; }
-  #kbd .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
-    padding: 4px 0; }
-  #kbd .label { color: var(--muted); font-size: 12.5px; }
-  #kbd .keys { display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end;
-    color: var(--muted); font-size: 11.5px; }
-  #kbd kbd { font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 2px 6px;
-    border-radius: 5px; border: 1px solid rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .07);
-    color: var(--fg); white-space: nowrap; }
-  #kbd .note { color: var(--faint); font-size: 11.5px; margin: 4px 0 0; }
-  #kbd-show { position: fixed; top: 50%; right: 16px; transform: translateY(-50%); z-index: 2;
-    width: 38px; height: 38px; place-items: center; padding: 0;
-    background: rgba(10, 18, 12, .78); color: var(--muted); border: 1px solid var(--line);
-    border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; }
-  #kbd-show:hover { color: var(--fg); background: rgba(10, 18, 12, .92); }
-  #kbd-show svg { width: 18px; height: 18px; }
+  /* How to play: a strip under the game that opens into three cards (web/howto.js fills it); open or closed is
+     remembered (localStorage). Hidden in fullscreen. */
+  #howto { width: min(100%, calc((100vh - 120px) * 4 / 3)); margin-top: 0; color: var(--fg); font-size: 15px; }
+  #stage:fullscreen ~ #howto { display: none; }
+  #howto > summary { width: auto; list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); user-select: none; }
+  #howto > summary::-webkit-details-marker { display: none; }
+  #howto > summary:hover { background: #2c2d2f; }
+  #howto > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #howto .ht-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--card-hi); color: var(--fg); flex: none; }
+  #howto .ht-icon svg { width: 20px; height: 20px; }
+  #howto .ht-title { font-weight: 600; font-size: 15px; }
+  #howto .ht-title small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
+  #howto .ht-chev { margin-left: auto; width: 36px; height: 36px; padding: 8px; border-radius: 50%; color: var(--muted); transition: transform .2s ease; }
+  #howto > summary:hover .ht-chev { background: var(--card-hi); }
+  #howto[open] .ht-chev { transform: rotate(180deg); }
+  #howto-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+  @media (max-width: 860px) { #howto-body { grid-template-columns: 1fr; } }
+  #howto .ht-card { border-radius: var(--radius); padding: 12px 8px 8px; background: var(--surface); box-shadow: var(--shadow); }
+  #howto h3 { margin: 0 8px 8px; font-size: 17px; font-weight: 700; color: var(--fg); }
+  #howto ol { list-style: none; margin: 0; padding: 0; display: grid; }
+  #howto li { display: grid; grid-template-columns: 116px 1fr; gap: 10px; align-items: start; padding: 8px; border-radius: 6px; }
+  #howto li:hover { background: var(--card-hi); }
+  #howto .ht-keys { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 1px; }
+  #howto kbd, #howto .ht-foot kbd { min-width: 24px; padding: 2px 7px; text-align: center; font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1.4;
+    color: var(--fg); border: 0; border-radius: 6px; background: var(--card-hi); }
+  #howto .ht-what { font-size: 15px; font-weight: 600; color: var(--fg); }
+  #howto .ht-what small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.35; margin-top: 2px; }
+  #howto .ht-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 4px; color: var(--muted); font-size: 13px; }
+  #howto .ht-foot span { display: inline-flex; align-items: center; gap: 4px; }
 </style>
 
 <link rel="stylesheet" href="director/persona.css">
@@ -200,25 +225,30 @@
             <input id="folder" type="file" webkitdirectory multiple hidden>
           </label>
         </div>
-        <p id="help" class="hidden small">Pick your the base game folder: the one that holds <b>Data</b>, <b>Audio</b> and the game's executable. It is copied
+        <p id="help" class="hidden small">Pick your Cricket 07 folder: the one that holds <b>Data</b>, <b>Audio</b> and the game's executable. It is copied
           into this browser's private storage once and never leaves your computer.</p>
       </section>
 
       <!-- home: single player only (NPL26 has no online play) -->
       <section id="view-home" class="view hidden">
-        <h1 class="brand">NPL26</h1>
-        <p class="tagline">The Nepal Premier League in the base game.</p>
-        <div class="choices">
-          <button id="play" class="choice">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14.5 3.5l6 6-9.5 9.5-3 .5-3.5-3.5.5-3z"/><path d="M4.5 19.5L3 21"/><circle cx="18.5" cy="18.5" r="2"/></svg>
-            <b>Play Solo</b>
-            <span>Offline, against the computer or with controllers on this device.</span>
-          </button>
+        <div class="hero" aria-hidden="true">
+          <svg viewBox="0 0 360 150">
+            <rect class="pitch" x="8" y="118" width="344" height="10" rx="5"/>
+            <rect class="crease" x="284" y="112" width="3" height="20" rx="1.5"/>
+            <ellipse class="dust" cx="206" cy="119" rx="16" ry="4"/>
+            <g class="stumps"><rect x="300" y="62" width="5" height="56" rx="2"/><rect x="309" y="62" width="5" height="56" rx="2"/>
+              <rect x="318" y="62" width="5" height="56" rx="2"/></g>
+            <rect class="bail b1" x="299" y="58" width="11" height="3.5" rx="1.75"/>
+            <rect class="bail b2" x="313" y="58" width="11" height="3.5" rx="1.75"/>
+            <g class="ball"><g class="spin"><circle r="10"/>
+              <path class="seam" d="M-3.2 -9.5 Q 1.5 0 -3.2 9.5 M 3.2 -9.5 Q 7.9 0 3.2 9.5"/>
+              <path class="stitch" d="M-3.2 -9.5 Q 1.5 0 -3.2 9.5 M 3.2 -9.5 Q 7.9 0 3.2 9.5"/></g></g>
+          </svg>
+          <span class="speed">138 km/h · bowled</span>
         </div>
-        <p class="small" style="margin-top:22px">Use a controller, or the keyboard: arrows to move, S to select.<br>
-          Fullscreen: <kbd>Alt</kbd> + <kbd>Enter</kbd> (<kbd>⌥</kbd> + <kbd>Enter</kbd> on Mac) or the button in the corner.</p>
-        <p class="small"><a href="#" id="reset">Use a different game folder</a></p>
+        <h1 class="brand">NPL<b>26</b></h1>
+        <p class="tagline">Nepal Premier League</p>
+        <button id="play" class="play-big">Play</button>
       </section>
 
       <!-- multiplayer: host or join -->
@@ -298,34 +328,14 @@
 
     </div>
   </div>
-  <aside id="kbd" aria-label="Keyboard controls">
-    <div class="kbd-head"><b>Keyboard controls</b>
-      <button id="kbd-close" type="button" aria-label="Hide keyboard controls" title="Hide">×</button>
-    </div>
-    <h3>Batting</h3>
-    <div class="row"><span class="label">Normal shot</span><div class="keys"><kbd>S</kbd></div></div>
-    <div class="row"><span class="label">Lofted shot (hold)</span><div class="keys"><kbd>Shift</kbd></div></div>
-    <div class="row"><span class="label">Advanced shot</span><div class="keys"><kbd>D</kbd></div></div>
-    <div class="row"><span class="label">Shot direction</span><div class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></div></div>
-    <div class="row"><span class="label">Take run</span><div class="keys"><kbd>D</kbd></div></div>
-    <div class="row"><span class="label">Cancel run</span><div class="keys"><kbd>A</kbd></div></div>
-    <h3>Bowling</h3>
-    <div class="row"><span class="label">Stock delivery</span><div class="keys"><kbd>S</kbd></div></div>
-    <div class="row"><span class="label">Special delivery</span><div class="keys"><kbd>A</kbd> <kbd>D</kbd> <kbd>Shift</kbd> <kbd>Alt</kbd></div></div>
-    <div class="row"><span class="label">Place ball</span><div class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></div></div>
-    <h3>Menu</h3>
-    <div class="row"><span class="label">Select</span><div class="keys"><kbd>S</kbd></div></div>
-    <div class="row"><span class="label">Back</span><div class="keys"><kbd>W</kbd></div></div>
-    <div class="row"><span class="label">Pause</span><div class="keys"><kbd>Esc</kbd></div></div>
-    <div class="row"><span class="label">Fullscreen</span><div class="keys"><kbd>Alt</kbd>+<kbd>Enter</kbd></div></div>
-  </aside>
-  <p class="credit">Browser port by <a href="https://twitter.com/dhaiwat" target="_blank" rel="noopener">Dhaiwat</a> &middot; <a href="https://github.com/Dhaiwat10/cricket07-browser" target="_blank" rel="noopener">Source</a></p>
-  <button id="kbd-show" type="button" aria-label="Show keyboard controls" title="Show keyboard controls">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="2.5" y="6" width="19" height="12" rx="2"/>
-      <path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 14h10"/>
-    </svg>
-  </button>
+  <details id="howto" open>
+    <summary>
+      <span class="ht-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 14h10"/></svg></span>
+      <span class="ht-title">How to play<small>Batting, bowling and fielding controls</small></span>
+      <svg class="ht-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+    </summary>
+    <div id="howto-body"></div>
+  </details>
 </main>
 <script src="netplay.js"></script>
 <script src="intro.js"></script>
@@ -333,7 +343,10 @@
 <script src="director/commentary.js"></script>
 <script src="director/persona.js"></script>
 <script src="director/show.js"></script>
+<script src="howto.js"></script>
 <script src="loader.js"></script>
 <script src="touch.js"></script>
+<script src="scorebar.js"></script>
+<script src="setup.js"></script>
 </body>
 </html>
